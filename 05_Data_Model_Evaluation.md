@@ -42,6 +42,8 @@ The label is "did this MR cause a problem after merge?", defined as any of:
 
 Reviewer overrides during the pilot give a second, cleaner source of labels.
 
+**Collecting the history for the shadow pilot.** [`scripts/collect_mr_history.py`](scripts/collect_mr_history.py) pulls merged MRs from the GitLab API and writes one CSV row per MR: files, lines added/removed, test files touched, paths, and a `problem` label when a later revert or hotfix MR references it (`!123`). It needs only a read-only token and the Python standard library. Author fields are deliberately not exported. The first thing to check with real output is how many problem labels we actually get. If it is only a handful in 6 months, the learned model has to wait and the pilot runs on rules plus reviewer overrides.
+
 ## Baseline
 
 The baseline is what teams already do informally: **look harder at big MRs (more than 300 changed lines).** Any model has to clearly beat this, otherwise it is not worth the complexity.

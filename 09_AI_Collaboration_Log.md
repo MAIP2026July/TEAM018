@@ -14,6 +14,8 @@
 | Prototype coding | Wrote the single-page prototype: rule engine, queue, detail panel, override flow, diff parser and evaluation tab |
 | Synthetic data | Drafted 24 sample MRs covering the typical cases, including ones the rules would miss |
 | Checking | Ran the scoring logic outside the browser to get the real evaluation numbers, so the documents quote computed results and not guesses |
+| Pilot data script | Wrote `scripts/collect_mr_history.py` to pull MR history and label problem MRs from reverts / hotfix references |
+| PDFs | Generated the PDF versions in `Submission/` from the Markdown documents |
 | Benchmarking | Looked at how other teams in the course structured their repositories, to match the expected format |
 
 ## Example prompts and workflow

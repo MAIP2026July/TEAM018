@@ -39,12 +39,15 @@ On 24 sample MRs, the "review big MRs carefully" rule caught 1 of 11 problem MRs
 
 ## Mapping to the packet's submission structure
 
-| Packet item | Where it is |
-|---|---|
-| 01_Executive_Summary | [01_Executive_Summary.md](01_Executive_Summary.md) |
-| 02_Final_Report | Documents 01-08 together |
-| 03_Presentation_Deck | [Appendix/Presentation_Outline.md](Appendix/Presentation_Outline.md) |
-| 04_Prototype_Readme_or_Link | [08_Prototype_MVP.md](08_Prototype_MVP.md) |
-| 05_AI_Collaboration_Log | [09_AI_Collaboration_Log.md](09_AI_Collaboration_Log.md) |
-| 06_Individual_Contribution_Statement | [10_Individual_Contribution.md](10_Individual_Contribution.md) |
-| Appendix: PRD, wireframes, metrics, roadmap, risk | Inside 03, 04, 05 and 07 |
+The PDFs are in [`Submission/`](Submission/). They are generated from the Markdown files, so the Markdown is the source.
+
+| Packet item | PDF | Source |
+|---|---|---|
+| 01_Executive_Summary | [PDF](Submission/01_Executive_Summary.pdf) (2 pages) | [01_Executive_Summary.md](01_Executive_Summary.md) |
+| 02_Final_Report | [PDF](Submission/02_Final_Report.pdf) | Documents 01-08 |
+| 03_Presentation_Deck | [PDF](Submission/03_Presentation_Deck.pdf) (10 slides) | [Appendix/Presentation_Outline.md](Appendix/Presentation_Outline.md) |
+| 04_Prototype_Readme_or_Link | - | [08_Prototype_MVP.md](08_Prototype_MVP.md) |
+| 05_AI_Collaboration_Log | [PDF](Submission/05_AI_Collaboration_Log.pdf) | [09_AI_Collaboration_Log.md](09_AI_Collaboration_Log.md) |
+| 06_Individual_Contribution_Statement | [PDF](Submission/06_Individual_Contribution_Statement.pdf) | [10_Individual_Contribution.md](10_Individual_Contribution.md) |
+| Appendix: PRD, wireframes, metrics, roadmap, risk | | Inside 03, 04, 05 and 07; [screenshots](Appendix/Screenshots/) |
+| Pilot data collection | | [scripts/collect_mr_history.py](scripts/collect_mr_history.py) |
