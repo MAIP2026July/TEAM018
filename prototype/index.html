@@ -1,0 +1,428 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MR Risk Assistant - TEAM018 prototype</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #ffffff; --text: #1d2330; --muted: #5f6b7a; --line: #dde2e8;
+    --low: #2e7d4f; --low-bg: #e3f3ea; --med: #9a6700; --med-bg: #fff4d6; --high: #b42318; --high-bg: #fde8e6;
+    --accent: #2457c5;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+  header { background: #1f2a3c; color: #fff; padding: 14px 20px; }
+  header h1 { margin: 0; font-size: 18px; }
+  header p { margin: 4px 0 0; color: #c5cedb; font-size: 12px; }
+  nav { display: flex; gap: 4px; padding: 10px 20px 0; border-bottom: 1px solid var(--line); background: #fff; }
+  nav button { border: 0; background: none; padding: 10px 14px; cursor: pointer; font-size: 14px; color: var(--muted); border-bottom: 2px solid transparent; }
+  nav button.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+  main { padding: 16px 20px 40px; max-width: 1300px; margin: 0 auto; }
+  .tab { display: none; } .tab.active { display: block; }
+  .grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: 16px; }
+  @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; margin-bottom: 16px; }
+  .card h2 { font-size: 15px; margin: 0 0 10px; }
+  .card h3 { font-size: 13px; margin: 14px 0 6px; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12px; color: var(--muted); font-weight: 600; }
+  tr.row { cursor: pointer; } tr.row:hover { background: #f1f4f9; } tr.row.sel { background: #e8eefb; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .Low { color: var(--low); background: var(--low-bg); } .Medium { color: var(--med); background: var(--med-bg); } .High { color: var(--high); background: var(--high-bg); }
+  .muted { color: var(--muted); } .small { font-size: 12px; }
+  .bar { height: 8px; background: #edf0f4; border-radius: 4px; overflow: hidden; margin: 6px 0 2px; }
+  .bar span { display: block; height: 100%; }
+  ul.sig { margin: 0; padding-left: 18px; } ul.sig li { margin: 3px 0; }
+  .pts { color: var(--muted); font-size: 12px; }
+  .summary { background: #f4f7fc; border-left: 3px solid var(--accent); padding: 10px 12px; border-radius: 4px; }
+  .warn { background: var(--med-bg); border-left: 3px solid var(--med); padding: 8px 12px; border-radius: 4px; margin: 8px 0; }
+  .files { font-family: Menlo, Consolas, monospace; font-size: 12px; }
+  .add { color: var(--low); } .del { color: var(--high); }
+  textarea, select, input { font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; width: 100%; }
+  textarea.code { font-family: Menlo, Consolas, monospace; font-size: 12px; min-height: 220px; }
+  .btn { background: var(--accent); color: #fff; border: 0; border-radius: 6px; padding: 8px 14px; cursor: pointer; font-size: 13px; }
+  .btn.sec { background: #fff; color: var(--accent); border: 1px solid var(--accent); }
+  .row-flex { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; }
+  .kpi { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; background: #fff; }
+  .kpi b { display: block; font-size: 20px; margin-top: 4px; }
+  .ok { color: var(--low); font-weight: 600; } .bad { color: var(--high); font-weight: 600; }
+  code { background: #eef1f5; padding: 1px 4px; border-radius: 3px; font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>MR Risk Assistant</h1>
+  <p>TEAM018 prototype | M Mahadev (2025mb26043) | All merge requests here are synthetic, written by me for the demo. Nothing is sent anywhere.</p>
+</header>
+<nav>
+  <button data-tab="queue" class="active">Review queue</button>
+  <button data-tab="paste">Analyse a diff</button>
+  <button data-tab="eval">Evaluation</button>
+  <button data-tab="about">How it works</button>
+</nav>
+
+<main>
+  <!-- QUEUE -->
+  <section id="queue" class="tab active">
+    <div class="grid">
+      <div>
+        <div class="card">
+          <h2>Open merge requests (sorted by risk)</h2>
+          <p class="muted small">The reviewer sees the riskiest MRs first instead of oldest first. Click a row to see why.</p>
+          <table>
+            <thead><tr><th>MR</th><th>Title</th><th>Size</th><th>Risk</th><th>Status</th></tr></thead>
+            <tbody id="queueBody"></tbody>
+          </table>
+        </div>
+        <div class="card">
+          <h2>Reviewer decision log</h2>
+          <div id="logBox" class="small muted">No decisions yet.</div>
+          <div class="row-flex"><button class="btn sec" id="exportBtn">Export log (JSON)</button></div>
+        </div>
+      </div>
+      <div id="detail"><div class="card muted">Select an MR on the left.</div></div>
+    </div>
+  </section>
+
+  <!-- PASTE -->
+  <section id="paste" class="tab">
+    <div class="grid">
+      <div class="card">
+        <h2>Paste a unified diff</h2>
+        <p class="muted small">Output of <code>git diff</code> or <code>git show</code>. Please use a sample, not company code. The analysis runs only inside this browser tab.</p>
+        <input id="pTitle" placeholder="MR title (optional)" style="margin-bottom:8px">
+        <textarea id="pDiff" class="code" placeholder="diff --git a/src/auth/login.py b/src/auth/login.py&#10;--- a/src/auth/login.py&#10;+++ b/src/auth/login.py&#10;@@ -10,3 +10,4 @@&#10;+password = &quot;admin123&quot;"></textarea>
+        <div class="row-flex">
+          <button class="btn" id="analyseBtn">Analyse</button>
+          <button class="btn sec" id="sampleBtn">Load a sample diff</button>
+        </div>
+      </div>
+      <div id="pasteResult"><div class="card muted">Result will appear here.</div></div>
+    </div>
+  </section>
+
+  <!-- EVAL -->
+  <section id="eval" class="tab">
+    <div class="card">
+      <h2>Does it beat a simple rule?</h2>
+      <p class="small">Each synthetic MR has an "after merge" outcome (did it need a hotfix, revert, or cause an incident). I compare two ways of picking MRs for extra review:
+      <b>Baseline</b> = what many teams do informally, look harder at big MRs (more than 300 changed lines).
+      <b>Prototype</b> = MRs scored <span class="badge High">High</span> by this tool.</p>
+      <div class="warn small"><b>Read this with care.</b> I wrote both the scoring rules and the sample MRs, so the prototype is bound to look good here. These numbers show the mechanism works end to end. They are not evidence of real-world accuracy. That needs the pilot evaluation described in 05_Data_Model_Evaluation.md.</div>
+      <div id="evalKpis" class="kpis"></div>
+    </div>
+    <div class="card">
+      <h2>Per-MR comparison</h2>
+      <table><thead><tr><th>MR</th><th>Title</th><th>Lines</th><th>Baseline flags?</th><th>Prototype</th><th>Actual outcome</th></tr></thead><tbody id="evalBody"></tbody></table>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section id="about" class="tab">
+    <div class="card">
+      <h2>What this prototype does and does not do</h2>
+      <h3>Pipeline</h3>
+      <p>MR diff &rarr; feature extraction (paths, size, tests, patterns) &rarr; risk score 0-100 &rarr; band (Low / Medium / High) &rarr; reasons + suggested review path &rarr; <b>human reviewer accepts or overrides with a reason</b>.</p>
+      <h3>Signals used</h3>
+      <div id="ruleTable"></div>
+      <h3>Deliberately not used</h3>
+      <p>Author name, seniority or past "bad MR" history. It would probably add some predictive power, but it turns the tool into a people-scoring system and developers would stop trusting it. See the ethics note.</p>
+      <h3>Honest limitations</h3>
+      <ul>
+        <li>The scoring is a weighted rule set that stands in for the ML model. In the pilot, the weights would be learned from real MR history (e.g. logistic regression), with these rules kept as the baseline.</li>
+        <li>The "AI summary" text is generated from templates here. In the pilot, an LLM would write it from the diff, with the rule signals passed in so it cannot invent reasons.</li>
+        <li>It has no idea about blast radius. A small change to a shared utility looks low risk (see MR-121 in the evaluation tab).</li>
+        <li>Keyword-based path matching over-triggers sometimes (see MR-122, a UI icon change under a "payments" folder).</li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<script>
+/* ---------------- synthetic data (written by me, not real) ---------------- */
+const MRS = [
+  { id:"MR-101", title:"Fix typo in README", desc:"Small doc fix.", files:[{p:"README.md",a:3,d:2}], outcome:{issue:false, note:"Merged, nothing after"} },
+  { id:"MR-102", title:"Update JWT expiry handling", desc:"Tokens now refresh 5 min before expiry.", files:[{p:"src/auth/jwt.py",a:45,d:12,lines:["+    if token.exp - now < REFRESH_WINDOW:","+        return refresh(token)"]}], outcome:{issue:true, note:"Users logged out randomly, hotfix next day"} },
+  { id:"MR-103", title:"Add retry to payment webhook", desc:"Retry 3 times with backoff.", files:[{p:"src/payments/webhook.py",a:80,d:10},{p:"tests/payments/test_webhook.py",a:40,d:0}], outcome:{issue:false, note:"Merged, nothing after"} },
+  { id:"MR-104", title:"Add S3 config for monthly reports", desc:"Reports bucket config.", files:[{p:"config/settings.py",a:6,d:0,lines:['+REPORTS_BUCKET = "acme-reports"','+AWS_ACCESS_KEY_ID = "AKIADEMODEMODEMO1234"','+AWS_SECRET_ACCESS_KEY = "demo-secret-not-a-real-key-000"']}], outcome:{issue:true, note:"Key leaked in repo, had to rotate"} },
+  { id:"MR-105", title:"Bump lodash and axios", desc:"Dependabot style upgrade.", files:[{p:"package.json",a:2,d:2},{p:"package-lock.json",a:300,d:280}], outcome:{issue:false, note:"Merged, nothing after"} },
+  { id:"MR-106", title:"Refactor user profile page UI", desc:"Split into smaller components.", files:[{p:"frontend/src/pages/Profile.tsx",a:220,d:180},{p:"frontend/src/components/Avatar.tsx",a:40,d:10},{p:"frontend/src/__tests__/Profile.test.tsx",a:30,d:0}], outcome:{issue:false, note:"Merged, nothing after"} },
+  { id:"MR-107", title:"Add status index and migrate orders table", desc:"Speeds up order search.", files:[{p:"db/migrations/0042_orders_status.sql",a:25,d:0},{p:"src/orders/repository.py",a:30,d:5}], outcome:{issue:true, note:"Migration locked table for 9 min in prod"} },
+  { id:"MR-108", title:"Increase worker pod memory", desc:"OOM kills on worker.", files:[{p:"k8s/worker/deployment.yaml",a:2,d:2,lines:["+            memory: 1Gi"]}], outcome:{issue:false, note:"Merged, nothing after"} },
+  { id:"MR-109", title:"Run API container as root to fix volume permission", desc:"Quick fix for mounted volume.", files:[{p:"k8s/api/deployment.yaml",a:3,d:1,lines:["+          runAsUser: 0","+          privileged: true"]}], outcome:{issue:true, note:"Flagged in security audit, reverted"} },
+  { id:"MR-110", title:"Add report export endpoint", desc:"CSV and PDF export.", files:[{p:"src/reports/api.py",a:150,d:0},{p:"src/reports/export.py",a:120,d:0},{p:"tests/reports/test_export.py",a:90,d:0}], outcome:{issue:false, note:"Merged, nothing after"} },
+  { id:"MR-111", title:"Change role check for admin APIs", desc:"Use new role enum.", files:[{p:"src/auth/permissions.py",a:12,d:8},{p:"tests/auth/test_permissions.py",a:20,d:0}], outcome:{issue:false, note:"Merged, nothing after"} },
+  { id:"MR-112", title:"Rewrite notification service", desc:"Move from polling to queue.", files:Array.from({length:18},(_,i)=>({p:`src/notifications/module_${i+1}.py`,a:50,d:36})).concat([{p:"tests/notifications/test_queue.py",a:60,d:0}]), outcome:{issue:true, note:"Duplicate emails to customers for 2 days"} },
+  { id:"MR-113", title:"Skip lint stage on draft MRs", desc:"Saves CI minutes.", files:[{p:".gitlab-ci.yml",a:5,d:1}], outcome:{issue:false, note:"Merged, nothing after"} },
+  { id:"MR-114", title:"Fix rounding in invoice total", desc:"Round half up.", files:[{p:"src/payments/invoice.py",a:4,d:2}], outcome:{issue:true, note:"Totals off by 1 paisa on some invoices"} },
+  { id:"MR-115", title:"Add logging to search service", desc:"Debug logs.", files:[{p:"src/search/service.py",a:15,d:2}], outcome:{issue:false, note:"Merged, nothing after"} },
+  { id:"MR-116", title:"Terraform: open DB firewall for debugging", desc:"Temporary, will revert.", files:[{p:"infra/terraform/db.tf",a:6,d:1,lines:['+    source_ranges = ["0.0.0.0/0"]']}], outcome:{issue:true, note:"DB exposed publicly for 3 days"} },
+  { id:"MR-117", title:"Update translations", desc:"New strings for checkout.", files:[{p:"locales/hi.json",a:140,d:130},{p:"locales/ta.json",a:130,d:125},{p:"locales/te.json",a:130,d:125}], outcome:{issue:false, note:"Merged, nothing after"} },
+  { id:"MR-118", title:"Add name filter to customer search", desc:"Raw SQL for speed.", files:[{p:"src/search/repository.py",a:20,d:2,lines:["+    q = f\"SELECT * FROM customers WHERE name = '{name}'\"","+    return db.execute(q)"]}], outcome:{issue:true, note:"SQL injection found in pentest"} },
+  { id:"MR-119", title:"Add unit tests for cart", desc:"Coverage for cart totals.", files:[{p:"tests/cart/test_cart.py",a:120,d:0}], outcome:{issue:false, note:"Merged, nothing after"} },
+  { id:"MR-120", title:"Change session timeout to 30 min", desc:"Security team request.", files:[{p:"config/auth.yaml",a:2,d:2}], outcome:{issue:false, note:"Merged, nothing after"} },
+  { id:"MR-121", title:"Refactor date utils", desc:"Cleanup, no behaviour change intended.", files:[{p:"src/common/date_utils.py",a:60,d:55},{p:"tests/common/test_date_utils.py",a:10,d:0}], outcome:{issue:true, note:"Timezone bug in 6 services that import it"} },
+  { id:"MR-122", title:"Add payment method icons", desc:"UPI, card, netbanking icons.", files:[{p:"frontend/src/payments/PaymentIcons.tsx",a:40,d:0}], outcome:{issue:false, note:"Merged, nothing after"} },
+  { id:"MR-123", title:"Change cache TTL for product prices", desc:"1h to 6h, reduce DB load.", files:[{p:"src/cache/config.py",a:2,d:2}], outcome:{issue:true, note:"Stale prices shown after sale started"} },
+  { id:"MR-124", title:"Upgrade auth client library", desc:"Version bump.", files:[{p:"requirements.txt",a:1,d:1}], outcome:{issue:true, note:"Breaking change in library, login failed in staging"} }
+];
+
+/* ---------------- scoring rules ---------------- */
+const RX = {
+  test: /(^|\/)(tests?|__tests__|spec)\/|\.test\.|\.spec\.|_test\.|(^|\/)test_/i,
+  docs: /\.md$|^docs\/|(^|\/)locales?\//i,
+  lock: /package-lock\.json$|yarn\.lock$|poetry\.lock$|go\.sum$|Pipfile\.lock$/i,
+  auth: /auth|login|jwt|oauth|permission|session|password/i,
+  pay: /payment|invoice|billing|checkout|refund/i,
+  migr: /migrations?\/|\.sql$/i,
+  data: /repository|dao|models?\.py$|\/db\//i,
+  infra: /k8s|kubernetes|helm|terraform|\.tf$|deployment\.ya?ml$|dockerfile/i,
+  ci: /\.gitlab-ci\.yml$|\.github\/workflows|jenkinsfile/i,
+  deps: /(^|\/)(package\.json|requirements\.txt|go\.mod|pom\.xml|build\.gradle|Gemfile)$/i,
+  conf: /\.(ya?ml|json|tf|ini|toml|env)$/i,
+  secret: [/AKIA[0-9A-Z]{16}/, /-----BEGIN (RSA |EC )?PRIVATE KEY/, /(password|passwd|secret|api[_-]?key|token)\s*[:=]\s*["'][^"']{6,}["']/i],
+  unsafe: [/privileged:\s*true/i, /runAsUser:\s*0\b/, /0\.0\.0\.0\/0/, /allowPrivilegeEscalation:\s*true/i, /verify\s*=\s*False/],
+  inject: [/f["'](SELECT|INSERT|UPDATE|DELETE)\b.*\{/i, /["'](SELECT|INSERT|UPDATE|DELETE)\b[^"']*["']\s*\+/i, /os\.system\(|subprocess\.[a-z]+\(.*shell\s*=\s*True/i]
+};
+const RULES = [
+  ["Possible secret in added lines", 40], ["Unsafe infra / security setting", 30], ["Injection-prone code pattern", 30],
+  ["Authentication / authorisation code", 25], ["Payments / billing code", 20], ["Database migration", 20], ["Data access layer", 8],
+  ["Infrastructure (k8s / terraform)", 15], ["CI pipeline", 8], ["Dependency manifest", 6],
+  ["Code changed, no tests changed", 15], ["Sensitive area changed without tests", 10], ["Low test-to-code ratio on a big change", 10],
+  ["Size: >1000 / >500 / >200 / >80 lines", "30 / 20 / 10 / 4"], ["More than 10 files", 8], ["Touches 3+ top-level modules", 6]
+];
+const HIGH = 45, MED = 20;
+
+function analyse(mr) {
+  const f = mr.files;
+  const code = f.filter(x => !RX.test.test(x.p) && !RX.docs.test(x.p) && !RX.lock.test(x.p) && !RX.deps.test(x.p) && !(RX.conf.test(x.p) && !/\.py$|\.js$|\.ts$/.test(x.p)));
+  const tests = f.filter(x => RX.test.test(x.p));
+  const lines = f.filter(x => !RX.lock.test(x.p)).reduce((s,x) => s + x.a + x.d, 0);
+  const codeLines = code.reduce((s,x) => s + x.a + x.d, 0);
+  const testLines = tests.reduce((s,x) => s + x.a + x.d, 0);
+  const added = f.flatMap(x => (x.lines || []).filter(l => l.startsWith("+")).map(l => ({p:x.p, t:l.slice(1)})));
+  const has = rx => f.some(x => rx.test(x.p));
+  const sig = []; const recs = new Set();
+  const push = (label, pts, detail) => sig.push({label, pts, detail});
+
+  const sec = added.find(l => RX.secret.some(r => r.test(l.t)));
+  if (sec) { push("Possible secret in added lines", 40, sec.p); recs.add("Security review"); recs.add("Rotate the credential if it was real"); }
+  const uns = added.find(l => RX.unsafe.some(r => r.test(l.t)));
+  if (uns) { push("Unsafe infra / security setting", 30, `${uns.p}: ${uns.t.trim()}`); recs.add("Security review"); recs.add("Platform / infra review"); }
+  const inj = added.find(l => RX.inject.some(r => r.test(l.t)));
+  if (inj) { push("Injection-prone code pattern", 30, inj.p); recs.add("Security review"); }
+
+  let sensitive = false;
+  if (has(RX.auth) && !f.every(x => RX.test.test(x.p))) { push("Authentication / authorisation code", 25, f.filter(x=>RX.auth.test(x.p)&&!RX.test.test(x.p)).map(x=>x.p).join(", ")); sensitive = true; recs.add("Security review"); }
+  if (code.some(x => RX.pay.test(x.p))) { push("Payments / billing code", 20, code.filter(x=>RX.pay.test(x.p)).map(x=>x.p).join(", ")); sensitive = true; recs.add("Senior developer review"); }
+  if (has(RX.migr)) { push("Database migration", 20, f.filter(x=>RX.migr.test(x.p)).map(x=>x.p).join(", ")); sensitive = true; recs.add("Senior developer review"); recs.add("Test migration on prod-size data"); }
+  if (code.some(x => RX.data.test(x.p))) { push("Data access layer", 8, code.filter(x=>RX.data.test(x.p)).map(x=>x.p).join(", ")); sensitive = true; }
+  if (has(RX.infra)) { push("Infrastructure (k8s / terraform)", 15, f.filter(x=>RX.infra.test(x.p)).map(x=>x.p).join(", ")); recs.add("Platform / infra review"); }
+  if (has(RX.ci)) push("CI pipeline", 8, f.filter(x=>RX.ci.test(x.p)).map(x=>x.p).join(", "));
+  if (has(RX.deps)) { push("Dependency manifest", 6, f.filter(x=>RX.deps.test(x.p)).map(x=>x.p).join(", ")); recs.add("Check changelog for breaking changes"); }
+
+  if (code.length && !tests.length) { push("Code changed, no tests changed", 15, `${code.length} code file(s), 0 test files`); recs.add("Add or update tests"); }
+  if (sensitive && code.length && !tests.length) push("Sensitive area changed without tests", 10, "");
+  if (codeLines > 200 && tests.length && testLines / codeLines < 0.1) { push("Low test-to-code ratio on a big change", 10, `${testLines} test lines vs ${codeLines} code lines`); recs.add("Add or update tests"); }
+
+  if (lines > 1000) push("Very large change", 30, `${lines} lines`);
+  else if (lines > 500) push("Large change", 20, `${lines} lines`);
+  else if (lines > 200) push("Medium-large change", 10, `${lines} lines`);
+  else if (lines > 80) push("Moderate size", 4, `${lines} lines`);
+  if (f.length > 10) push("More than 10 files", 8, `${f.length} files`);
+  const mods = new Set(f.map(x => x.p.split("/").slice(0, 2).join("/")));
+  if (mods.size >= 3 && code.length >= 3) push("Touches 3+ top-level modules", 6, [...mods].join(", "));
+
+  let score = sig.reduce((s,x) => s + x.pts, 0);
+  const onlyDocsTests = f.every(x => RX.docs.test(x.p) || RX.test.test(x.p));
+  if (onlyDocsTests) { score = Math.min(score, 5); sig.length = 0; push("Only docs / tests / translations changed", 0, ""); }
+  score = Math.min(score, 100);
+  const band = score >= HIGH ? "High" : score >= MED ? "Medium" : "Low";
+  const borderline = Math.abs(score - HIGH) <= 4 || Math.abs(score - MED) <= 4;
+  if (band === "High") recs.add("Do not merge until the above reviews are done");
+  if (band === "Low" && !recs.size) recs.add("Standard review");
+  if (band === "Medium" && !recs.size) recs.add("Standard review, reviewer to look at flagged areas");
+  sig.sort((a,b) => b.pts - a.pts);
+  return { score, band, borderline, signals: sig, recs: [...recs], lines, nfiles: f.length, summary: summarise(mr, band, sig, code, tests) };
+}
+
+/* Template stand-in for the LLM summary in the pilot */
+function summarise(mr, band, sig, code, tests) {
+  if (!sig.length || sig[0].pts === 0) return "This MR only changes documentation, tests or translations. Normal review is enough.";
+  const top = sig.filter(s => s.pts > 0).slice(0, 3).map(s => s.label.toLowerCase());
+  let t = `Rated ${band.toLowerCase()} mainly because of: ${top.join("; ")}.`;
+  if (sig.some(s => s.label.startsWith("Possible secret"))) t += " A credential-like value appears in the added lines. If it is real, treat it as leaked even if the MR is closed.";
+  if (sig.some(s => s.label.startsWith("Unsafe"))) t += " A setting that weakens isolation or exposure is being introduced. Check whether there is a safer way to get the same result.";
+  if (sig.some(s => s.label.startsWith("Injection"))) t += " User input appears to be built directly into a query or command. Parameterised queries would avoid this.";
+  if (code.length && !tests.length) t += " No test files were changed alongside the code.";
+  if (band === "Low") t += " Nothing stands out, but this tool cannot see how widely the changed code is used.";
+  return t;
+}
+
+/* ---------------- UI ---------------- */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const results = Object.fromEntries(MRS.map(m => [m.id, analyse(m)]));
+const decisions = {};
+let selected = null;
+
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("nav button").forEach(x => x.classList.toggle("active", x === b));
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.id === b.dataset.tab));
+});
+
+function renderQueue() {
+  const rows = [...MRS].sort((a,b) => results[b.id].score - results[a.id].score);
+  $("queueBody").innerHTML = rows.map(m => {
+    const r = results[m.id], d = decisions[m.id];
+    const status = d ? (d.action === "accept" ? "Accepted" : `Overridden to ${d.finalBand}`) : "Pending";
+    return `<tr class="row ${selected === m.id ? "sel" : ""}" data-id="${m.id}">
+      <td style="white-space:nowrap">${m.id}</td><td>${esc(m.title)}</td><td class="small muted">${r.nfiles} file${r.nfiles>1?"s":""}, ${r.lines} lines</td>
+      <td><span class="badge ${r.band}">${r.band} ${r.score}</span>${r.borderline ? ' <span class="small muted" title="close to a threshold">~</span>' : ""}</td>
+      <td class="small">${status}</td></tr>`;
+  }).join("");
+  document.querySelectorAll("#queueBody tr").forEach(tr => tr.onclick = () => { selected = tr.dataset.id; renderQueue(); renderDetail(); });
+}
+
+function resultCard(mr, r, withDecision) {
+  const color = r.band === "High" ? "var(--high)" : r.band === "Medium" ? "var(--med)" : "var(--low)";
+  return `<div class="card">
+    <h2>${esc(mr.id)} | ${esc(mr.title)}</h2>
+    ${mr.desc ? `<p class="muted small">${esc(mr.desc)}</p>` : ""}
+    <div><span class="badge ${r.band}">${r.band} risk</span> <span class="small muted">score ${r.score} / 100</span></div>
+    <div class="bar"><span style="width:${r.score}%;background:${color}"></span></div>
+    ${r.borderline ? `<div class="warn small">This score is close to a band threshold. Treat the band as uncertain and use your judgement.</div>` : ""}
+    <h3>Summary</h3><div class="summary">${esc(r.summary)}</div>
+    <h3>Why (signals found)</h3>
+    <ul class="sig">${r.signals.map(s => `<li>${esc(s.label)} <span class="pts">${s.pts ? "+" + s.pts : ""}</span>${s.detail ? `<div class="small muted">${esc(s.detail)}</div>` : ""}</li>`).join("")}</ul>
+    <h3>Suggested review path</h3>
+    <ul class="sig">${r.recs.map(x => `<li>${esc(x)}</li>`).join("")}</ul>
+    <h3>Files</h3>
+    <div class="files">${mr.files.slice(0, 12).map(x => `<div>${esc(x.p)} <span class="add">+${x.a}</span> <span class="del">-${x.d}</span></div>`).join("")}${mr.files.length > 12 ? `<div class="muted">... ${mr.files.length - 12} more</div>` : ""}</div>
+  </div>
+  ${withDecision ? decisionCard(mr, r) : ""}`;
+}
+
+function decisionCard(mr, r) {
+  const d = decisions[mr.id];
+  return `<div class="card">
+    <h2>Reviewer decision</h2>
+    <p class="small muted">The tool only recommends. The reviewer owns the decision. Overrides need a reason so we can learn from them later.</p>
+    ${d ? `<p class="small">Recorded: <b>${d.action === "accept" ? "Accepted " + r.band : "Overridden to " + d.finalBand}</b>${d.reason ? " - " + esc(d.reason) : ""}</p>` : ""}
+    <div class="row-flex"><button class="btn" id="acceptBtn">Accept ${r.band}</button></div>
+    <div class="row-flex">
+      <select id="ovBand" style="width:auto"><option>Low</option><option>Medium</option><option>High</option></select>
+      <input id="ovReason" placeholder="Reason for override (required)" style="flex:1;min-width:200px">
+      <button class="btn sec" id="ovBtn">Override</button>
+    </div>
+  </div>`;
+}
+
+function renderDetail() {
+  const mr = MRS.find(m => m.id === selected), r = results[selected];
+  $("detail").innerHTML = resultCard(mr, r, true);
+  $("acceptBtn").onclick = () => record(mr, r, "accept", r.band, "");
+  $("ovBtn").onclick = () => {
+    const reason = $("ovReason").value.trim(), band = $("ovBand").value;
+    if (!reason) { alert("Please give a reason for the override."); return; }
+    record(mr, r, "override", band, reason);
+  };
+}
+
+function record(mr, r, action, finalBand, reason) {
+  decisions[mr.id] = { mr: mr.id, toolBand: r.band, toolScore: r.score, action, finalBand, reason, at: new Date().toISOString() };
+  renderQueue(); renderDetail(); renderLog();
+}
+
+function renderLog() {
+  const ds = Object.values(decisions);
+  if (!ds.length) { $("logBox").textContent = "No decisions yet."; return; }
+  const ov = ds.filter(d => d.action === "override").length;
+  $("logBox").innerHTML = `<p>${ds.length} decision(s), ${ov} override(s). Override rate: <b>${Math.round(100 * ov / ds.length)}%</b> (a guardrail metric in the pilot).</p>` +
+    `<table><tr><th>MR</th><th>Tool</th><th>Final</th><th>Reason</th></tr>${ds.map(d => `<tr><td>${d.mr}</td><td>${d.toolBand}</td><td>${d.finalBand}</td><td class="small">${esc(d.reason || "-")}</td></tr>`).join("")}</table>`;
+}
+
+$("exportBtn").onclick = () => {
+  const blob = new Blob([JSON.stringify(Object.values(decisions), null, 2)], {type: "application/json"});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "mr_review_decisions.json"; a.click();
+};
+
+/* ---------------- paste a diff ---------------- */
+function parseDiff(text) {
+  const files = []; let cur = null;
+  for (const line of text.split(/\r?\n/)) {
+    const m = line.match(/^diff --git a\/(.+?) b\/(.+)$/);
+    if (m) { cur = {p: m[2], a: 0, d: 0, lines: []}; files.push(cur); continue; }
+    if (!cur) { const pm = line.match(/^\+\+\+ b\/(.+)$/); if (pm) { cur = {p: pm[1], a: 0, d: 0, lines: []}; files.push(cur); } continue; }
+    if (line.startsWith("+++") || line.startsWith("---")) continue;
+    if (line.startsWith("+")) { cur.a++; cur.lines.push(line); }
+    else if (line.startsWith("-")) cur.d++;
+  }
+  return files;
+}
+const SAMPLE = `diff --git a/src/auth/login.py b/src/auth/login.py
+--- a/src/auth/login.py
++++ b/src/auth/login.py
+@@ -12,6 +12,9 @@ def login(user, pw):
++    # temp bypass for testing
++    if user == "admin" and pw == "admin":
++        return issue_token(user)
+     return check_password(user, pw)
+diff --git a/src/auth/config.py b/src/auth/config.py
+--- a/src/auth/config.py
++++ b/src/auth/config.py
+@@ -1,3 +1,4 @@
++API_KEY = "demo-key-not-real-12345"`;
+$("sampleBtn").onclick = () => { $("pDiff").value = SAMPLE; $("pTitle").value = "Login fix"; };
+$("analyseBtn").onclick = () => {
+  const files = parseDiff($("pDiff").value);
+  if (!files.length) { $("pasteResult").innerHTML = `<div class="card bad">Could not find any files in that text. Paste the output of git diff.</div>`; return; }
+  const mr = { id: "Pasted", title: $("pTitle").value || "Pasted diff", desc: "", files };
+  $("pasteResult").innerHTML = resultCard(mr, analyse(mr), false);
+};
+
+/* ---------------- evaluation ---------------- */
+function renderEval() {
+  const rows = MRS.map(m => {
+    const r = results[m.id];
+    const rawLines = m.files.reduce((s,x) => s + x.a + x.d, 0); // baseline is naive, counts everything
+    return { m, r, base: rawLines > 300, proto: r.band === "High", rawLines };
+  });
+  const stats = key => {
+    const tp = rows.filter(x => x[key] && x.m.outcome.issue).length, fp = rows.filter(x => x[key] && !x.m.outcome.issue).length;
+    const fn = rows.filter(x => !x[key] && x.m.outcome.issue).length, flagged = tp + fp;
+    return { tp, fp, fn, flagged, recall: tp / (tp + fn), precision: flagged ? tp / flagged : 0, load: flagged / rows.length };
+  };
+  const b = stats("base"), p = stats("proto"), pct = v => Math.round(v * 100) + "%";
+  const issues = rows.filter(x => x.m.outcome.issue).length;
+  $("evalKpis").innerHTML = `
+    <div class="kpi">Sample size<b>${rows.length} MRs</b><span class="small muted">${issues} had a problem after merge</span></div>
+    <div class="kpi">Problem MRs caught (recall)<b>${pct(b.recall)} &rarr; ${pct(p.recall)}</b><span class="small muted">baseline &rarr; prototype</span></div>
+    <div class="kpi">Flags that were real (precision)<b>${pct(b.precision)} &rarr; ${pct(p.precision)}</b><span class="small muted">baseline &rarr; prototype</span></div>
+    <div class="kpi">Share of queue flagged<b>${pct(b.load)} &rarr; ${pct(p.load)}</b><span class="small muted">reviewer load for deep review</span></div>
+    <div class="kpi">Missed problem MRs<b>${b.fn} &rarr; ${p.fn}</b><span class="small muted">see rows marked "missed"</span></div>`;
+  $("evalBody").innerHTML = rows.map(x => {
+    const iss = x.m.outcome.issue;
+    const tag = (flag) => flag ? (iss ? '<span class="ok">yes, correct</span>' : '<span class="bad">yes, false alarm</span>') : (iss ? '<span class="bad">no, missed</span>' : '<span class="muted">no</span>');
+    return `<tr><td>${x.m.id}</td><td>${esc(x.m.title)}</td><td>${x.rawLines}</td><td>${tag(x.base)}</td>
+      <td><span class="badge ${x.r.band}">${x.r.band} ${x.r.score}</span> ${tag(x.proto)}</td>
+      <td class="small">${iss ? "<b>Problem:</b> " : ""}${esc(x.m.outcome.note)}</td></tr>`;
+  }).join("");
+}
+
+$("ruleTable").innerHTML = `<table><tr><th>Signal</th><th>Points</th></tr>${RULES.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td></tr>`).join("")}</table>
+  <p class="small muted">Bands: High &ge; ${HIGH}, Medium ${MED}-${HIGH - 1}, Low &lt; ${MED}. Docs/tests/translation-only MRs are capped at 5. Scores within 4 points of a threshold are marked as uncertain.</p>`;
+
+renderQueue(); renderEval();
+
+// deep links: #eval, #paste, #about, or #MR-104 to open an MR
+const h = decodeURIComponent(location.hash.slice(1));
+if (results[h]) { selected = h; renderQueue(); renderDetail(); }
+else if (h) document.querySelector(`nav button[data-tab="${h}"]`)?.click();
+if (h === "paste") { $("sampleBtn").click(); $("analyseBtn").click(); }
+</script>
+</body>
+</html>
